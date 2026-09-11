@@ -5,6 +5,11 @@ export type CreateEquipmentInput = {
 
 export type UpdateEquipmentInput = Partial<CreateEquipmentInput>;
 
+export type EquipmentListQuery = {
+  page: number;
+  pageSize: number;
+};
+
 export class RequestValidationError extends Error {
   constructor(message: string) {
     super(message);
@@ -13,6 +18,7 @@ export class RequestValidationError extends Error {
 }
 
 const mutableEquipmentFields = ["name", "code"] as const;
+const listFields = ["page", "pageSize"] as const;
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -53,9 +59,22 @@ export function validateUpdateEquipment(value: unknown): UpdateEquipmentInput {
   return input;
 }
 
-function validateObject(value: unknown): Record<string, unknown> {
+export function validateEquipmentListQuery(value: unknown): EquipmentListQuery {
+  const query = validateObject(value, "Query parameters");
+  validateAllowedFields(query, listFields);
+
+  return {
+    page: query.page === undefined ? 1 : validatePositiveInteger(query.page, "page"),
+    pageSize:
+      query.pageSize === undefined
+        ? 10
+        : validatePositiveInteger(query.pageSize, "pageSize", 100),
+  };
+}
+
+function validateObject(value: unknown, label = "Request body"): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
-    throw new RequestValidationError("Request body must be a JSON object.");
+    throw new RequestValidationError(`${label} must be an object.`);
   }
 
   return value as Record<string, unknown>;
@@ -78,4 +97,18 @@ function validateRequiredText(value: unknown, field: string): string {
   }
 
   return value.trim();
+}
+
+function validatePositiveInteger(value: unknown, field: string, maximum?: number): number {
+  if (typeof value !== "string" || !/^[1-9]\d*$/.test(value)) {
+    throw new RequestValidationError(`${field} must be a positive integer.`);
+  }
+
+  const numberValue = Number(value);
+
+  if (maximum !== undefined && numberValue > maximum) {
+    throw new RequestValidationError(`${field} must not exceed ${maximum}.`);
+  }
+
+  return numberValue;
 }

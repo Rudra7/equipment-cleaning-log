@@ -91,7 +91,7 @@ export function validateCleaningRecordListQuery(
 
   return {
     equipmentId: validateUuid(query.equipmentId, "equipmentId"),
-    page: query.page === undefined ? 1 : validatePositiveInteger(query.page, "page", 1),
+    page: query.page === undefined ? 1 : validatePositiveInteger(query.page, "page"),
     pageSize:
       query.pageSize === undefined
         ? 20
@@ -171,14 +171,14 @@ function validateStatus(value: unknown): CleaningRecordStatusInput {
   return value as CleaningRecordStatusInput;
 }
 
-function validatePositiveInteger(value: unknown, field: string, maximum: number): number {
+function validatePositiveInteger(value: unknown, field: string, maximum?: number): number {
   if (typeof value !== "string" || !/^[1-9]\d*$/.test(value)) {
     throw new RequestValidationError(`${field} must be a positive integer.`);
   }
 
   const numberValue = Number(value);
 
-  if (numberValue > maximum) {
+  if (maximum !== undefined && numberValue > maximum) {
     throw new RequestValidationError(`${field} must not exceed ${maximum}.`);
   }
 

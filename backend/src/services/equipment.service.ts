@@ -1,13 +1,29 @@
 import { prisma } from "../lib/prisma.ts";
 import type {
   CreateEquipmentInput,
+  EquipmentListQuery,
   UpdateEquipmentInput,
 } from "../validators/equipment.validation.ts";
 
-export const getAllEquipments = async () => {
-  return prisma.equipment.findMany({
-    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-  });
+export const getAllEquipments = async (query: EquipmentListQuery) => {
+  const [items, totalItems] = await prisma.$transaction([
+    prisma.equipment.findMany({
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      skip: (query.page - 1) * query.pageSize,
+      take: query.pageSize,
+    }),
+    prisma.equipment.count(),
+  ]);
+
+  return {
+    items,
+    pagination: {
+      page: query.page,
+      pageSize: query.pageSize,
+      totalItems,
+      totalPages: Math.ceil(totalItems / query.pageSize),
+    },
+  };
 };
 
 export const getEquipmentById = async (id: string) => {

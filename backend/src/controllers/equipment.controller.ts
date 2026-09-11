@@ -10,15 +10,17 @@ import {
   RequestValidationError,
   validateCreateEquipment,
   validateEquipmentId,
+  validateEquipmentListQuery,
   validateUpdateEquipment,
 } from "../validators/equipment.validation.ts";
 
 export const listEquipment = async (req: Request, res: Response) => {
   try {
-    const equipment = await getAllEquipments();
+    const query = validateEquipmentListQuery(req.query);
+    const equipment = await getAllEquipments(query);
     res.status(200).json(equipment);
   } catch (error) {
-    sendUnexpectedError(res, error);
+    sendRequestError(res, error);
   }
 };
 

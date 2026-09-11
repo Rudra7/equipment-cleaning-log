@@ -1,0 +1,65 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum EquipmentStatus {
+  active
+  retired
+}
+
+enum CleaningRecordStatus {
+  pending
+  verified
+}
+
+enum CleaningRecordAuditAction {
+  CREATED
+  UPDATED
+}
+
+model Equipment {
+  id              String           @id @default(uuid())
+  name            String
+  code            String
+  status          EquipmentStatus  @default(active)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  cleaningRecords CleaningRecord[]
+}
+
+model CleaningRecord {
+  id          String               @id @default(uuid())
+  equipmentId String
+  cleanedBy   String
+  cleanedAt   DateTime
+  method      String
+  notes       String?
+  status      CleaningRecordStatus @default(pending)
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  equipment Equipment             @relation(fields: [equipmentId], references: [id])
+  audits    CleaningRecordAudit[]
+
+  @@index([equipmentId, cleanedAt(sort: Desc), id(sort: Desc)])
+}
+
+model CleaningRecordAudit {
+  id               String                    @id @default(uuid())
+  cleaningRecordId String
+  action           CleaningRecordAuditAction
+  field            String
+  oldValue         String?
+  newValue         String?
+  changedBy        String
+  changedAt        DateTime                  @default(now())
+
+  cleaningRecord CleaningRecord @relation(fields: [cleaningRecordId], references: [id])
+
+  @@index([cleaningRecordId])
+}
